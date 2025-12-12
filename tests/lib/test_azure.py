@@ -802,3 +802,149 @@ def test_client_sets_base_url(client: Client) -> None:
         )
     )
     assert req.url == "https://example-resource.azure.openai.com/openai/models?api-version=2024-02-01"
+
+
+@pytest.mark.respx()
+def test_azure_images_edit_sends_json_sync(respx_mock: MockRouter) -> None:
+    # Mock the Azure images edit endpoint
+    respx_mock.post(
+        "https://example-resource.azure.openai.com/openai/deployments/my-deployment/images/edits?api-version=2023-07-01"
+    ).mock(return_value=httpx.Response(200, json={"data": [{"url": "https://example.com/image.png"}]}))
+
+    # Create client with deployment
+    client = AzureOpenAI(
+        api_version="2023-07-01",
+        api_key="example API key",
+        azure_endpoint="https://example-resource.azure.openai.com",
+        azure_deployment="my-deployment",
+    )
+
+    # Call images.edit - this should send application/json for Azure
+    client.images.edit(
+        image=b"fake image",
+        prompt="test prompt",
+    )
+
+    # Check the request was made with JSON content-type and contains base64 data URL
+    calls = cast("list[MockRequestCall]", respx_mock.calls)
+    assert len(calls) == 1
+    content_type = calls[0].request.headers.get("Content-Type")
+    assert "application/json" in content_type
+    request_body = calls[0].request.content.decode("utf-8")
+    assert "data:image/" in request_body and "base64," in request_body
+
+
+@pytest.mark.respx()
+def test_azure_images_edit_with_filename_detects_mime(respx_mock: MockRouter) -> None:
+    # Mock the Azure images edit endpoint
+    respx_mock.post(
+        "https://example-resource.azure.openai.com/openai/deployments/my-deployment/images/edits?api-version=2023-07-01"
+    ).mock(return_value=httpx.Response(200, json={"data": [{"url": "https://example.com/image.jpg"}]}))
+
+    # Create client with deployment
+    client = AzureOpenAI(
+        api_version="2023-07-01",
+        api_key="example API key",
+        azure_endpoint="https://example-resource.azure.openai.com",
+        azure_deployment="my-deployment",
+    )
+
+    # Call images.edit with a filename that should detect as image/jpeg
+    client.images.edit(
+        image=("test.jpg", b"fake jpeg image"),
+        prompt="test prompt",
+    )
+
+    # Check the request body contains the correct data URL
+    calls = cast("list[MockRequestCall]", respx_mock.calls)
+    assert len(calls) == 1
+    content_type = calls[0].request.headers.get("Content-Type")
+    assert "application/json" in content_type
+    request_body = calls[0].request.content.decode("utf-8")
+    assert "data:image/jpeg;base64," in request_body
+
+
+@pytest.mark.respx()
+def test_azure_images_generate_sends_json_sync(respx_mock: MockRouter) -> None:
+    # Mock the Azure images generate endpoint
+    respx_mock.post(
+        "https://example-resource.azure.openai.com/openai/deployments/my-deployment/images/generations?api-version=2023-07-01"
+    ).mock(return_value=httpx.Response(200, json={"data": [{"url": "https://example.com/image.png"}]}))
+
+    # Create client with deployment
+    client = AzureOpenAI(
+        api_version="2023-07-01",
+        api_key="example API key",
+        azure_endpoint="https://example-resource.azure.openai.com",
+        azure_deployment="my-deployment",
+    )
+
+    # Call images.generate - this should send application/json for Azure
+    client.images.generate(
+        prompt="test prompt",
+    )
+
+    # Check the request was made with JSON content-type
+    calls = cast("list[MockRequestCall]", respx_mock.calls)
+    assert len(calls) == 1
+    content_type = calls[0].request.headers.get("Content-Type")
+    assert "application/json" in content_type
+
+
+@pytest.mark.asyncio
+@pytest.mark.respx()
+async def test_azure_images_edit_sends_json_async(respx_mock: MockRouter) -> None:
+    # Mock the Azure images edit endpoint
+    respx_mock.post(
+        "https://example-resource.azure.openai.com/openai/deployments/my-deployment/images/edits?api-version=2023-07-01"
+    ).mock(return_value=httpx.Response(200, json={"data": [{"url": "https://example.com/image.png"}]}))
+
+    # Create client with deployment
+    client = AsyncAzureOpenAI(
+        api_version="2023-07-01",
+        api_key="example API key",
+        azure_endpoint="https://example-resource.azure.openai.com",
+        azure_deployment="my-deployment",
+    )
+
+    # Call images.edit - this should send application/json for Azure
+    await client.images.edit(
+        image=b"fake image",
+        prompt="test prompt",
+    )
+
+    # Check the request was made with JSON content-type and contains base64 data URL
+    calls = cast("list[MockRequestCall]", respx_mock.calls)
+    assert len(calls) == 1
+    content_type = calls[0].request.headers.get("Content-Type")
+    assert "application/json" in content_type
+    request_body = calls[0].request.content.decode("utf-8")
+    assert "data:image/" in request_body and "base64," in request_body
+
+
+@pytest.mark.asyncio
+@pytest.mark.respx()
+async def test_azure_images_generate_sends_json_async(respx_mock: MockRouter) -> None:
+    # Mock the Azure images generate endpoint
+    respx_mock.post(
+        "https://example-resource.azure.openai.com/openai/deployments/my-deployment/images/generations?api-version=2023-07-01"
+    ).mock(return_value=httpx.Response(200, json={"data": [{"url": "https://example.com/image.png"}]}))
+
+    # Create client with deployment
+    client = AsyncAzureOpenAI(
+        api_version="2023-07-01",
+        api_key="example API key",
+        azure_endpoint="https://example-resource.azure.openai.com",
+        azure_deployment="my-deployment",
+    )
+
+    # Call images.generate - this should send application/json for Azure
+    await client.images.generate(
+        prompt="test prompt",
+    )
+
+    # Check the request was made with JSON content-type
+    calls = cast("list[MockRequestCall]", respx_mock.calls)
+    assert len(calls) == 1
+    content_type = calls[0].request.headers.get("Content-Type")
+    assert "application/json" in content_type
