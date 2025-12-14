@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import os
+import base64
 import inspect
+import mimetypes
 from typing import Any, Union, Mapping, TypeVar, Callable, Awaitable, cast, overload
 from typing_extensions import Self, override
 
@@ -24,6 +26,13 @@ _deployments_endpoints = set(
         "/audio/transcriptions",
         "/audio/translations",
         "/audio/speech",
+        "/images/generations",
+        "/images/edits",
+    ]
+)
+
+_image_endpoints = set(
+    [
         "/images/generations",
         "/images/edits",
     ]
@@ -53,6 +62,42 @@ class BaseAzureClient(BaseClient[_HttpxClientT, _DefaultStreamT]):
     _azure_endpoint: httpx.URL | None
     _azure_deployment: str | None
 
+    def _prepare_image_data_for_azure(self, options: FinalRequestOptions) -> tuple[dict[str, Any], dict[str, str]]:
+        """Prepare image data for Azure API by converting files to base64 data URLs."""
+        json_data = dict(options.json_data) if options.json_data else {}
+        headers = dict(options.headers) if is_given(options.headers) else {}
+
+        if not options.files:
+            return json_data, headers
+
+        for key, value in options.files:
+            try:
+                filename = None
+                if isinstance(value, tuple) and len(value) == 2:
+                    filename, fileobj = value
+                else:
+                    fileobj = value
+
+                if hasattr(fileobj, "read"):
+                    data = fileobj.read()
+                else:
+                    data = fileobj
+
+                # Detect MIME type from filename or default to PNG
+                mime_type, _ = mimetypes.guess_type(filename) if isinstance(filename, str) else (None, None)
+                if not mime_type or not mime_type.startswith("image/"):
+                    mime_type = "image/png"
+
+                # Encode to base64 data URL
+                base64_data = base64.b64encode(data).decode("utf-8")
+                json_data[key] = f"data:{mime_type};base64,{base64_data}"
+
+            except Exception as e:
+                raise OpenAIError(f"Failed to process image file for key '{key}': {e}") from e
+
+        headers["Content-Type"] = "application/json"
+        return json_data, headers
+
     @override
     def _build_request(
         self,
@@ -64,6 +109,11 @@ class BaseAzureClient(BaseClient[_HttpxClientT, _DefaultStreamT]):
             model = options.json_data.get("model")
             if model is not None and "/deployments" not in str(self.base_url.path):
                 options.url = f"/deployments/{model}{options.url}"
+
+        # Convert image files to base64 for Azure API compatibility
+        if options.url in _image_endpoints and options.files:
+            options.json_data, options.headers = self._prepare_image_data_for_azure(options)
+            options.files = None
 
         return super()._build_request(options, retries_taken=retries_taken)
 
