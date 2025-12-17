@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.13.0 (2025-12-16)
+
+Full Changelog: [v2.12.0...v2.13.0](https://github.com/openai/openai-python/compare/v2.12.0...v2.13.0)
+
+### Features
+
+* **api:** gpt-image-1.5 ([1c88f03](https://github.com/openai/openai-python/commit/1c88f03bb48aa67426744e5b74f6197f30f61c73))
+
+
+### Chores
+
+* **ci:** add CI job to detect breaking changes with the Agents SDK ([#1436](https://github.com/openai/openai-python/issues/1436)) ([237c91e](https://github.com/openai/openai-python/commit/237c91ee6738b6764b139fd7afa68294d3ee0153))
+* **internal:** add missing files argument to base client ([e6d6fd5](https://github.com/openai/openai-python/commit/e6d6fd5989d76358ea5d9abb5949aa87646cbef6))
+
+## 2.12.0 (2025-12-15)
+
+Full Changelog: [v2.11.0...v2.12.0](https://github.com/openai/openai-python/compare/v2.11.0...v2.12.0)
+
+### Features
+
+* **api:** api update ([a95c4d0](https://github.com/openai/openai-python/commit/a95c4d0952ff5eb767206574e687cb029a49a4ab))
+* **api:** fix grader input list, add dated slugs for sora-2 ([b2c389b](https://github.com/openai/openai-python/commit/b2c389bf5c3bde50bac2d9f60cce58f4aef44a41))
+
 ## 2.11.0 (2025-12-11)
 
 Full Changelog: [v2.10.0...v2.11.0](https://github.com/openai/openai-python/compare/v2.10.0...v2.11.0)
